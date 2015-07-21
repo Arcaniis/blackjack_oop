@@ -1,17 +1,9 @@
-# Player enters the amont of money they intend to play with. Player places bet. 
-# Dealer deals card to players and himself from the deck. Players hit or stay trying not to bust. 
-# Dealer then hits or stays to beat players score and not bust. Money is adjusted. 
-# This continues till player cashes out or loses all money.
-
-# Nouns: Player | Dealer | Card | Deck | Money | Hand
-
-# Verbs: Bet | Deal | Hit | Stay | Adjust_Money
 module SystemClear
 
-  def system_clear(money, bet)
+  def system_clear(player)
     system('cls')
     system('clear')
-    puts "Your chips: $#{money}   Your bet: $#{bet}"
+    puts "Your chips: $#{player.money}   Your bet: $#{player.bet}"
     puts ""
   end
 
@@ -63,13 +55,9 @@ end
 class Player
   include SystemClear
   include Common
-  attr_reader :name
   attr_accessor :money, :hand, :bet
   
   def initialize
-    puts "=> Please enter your name:"
-    @name = gets.chomp
-    puts ""
     puts "=> Please enter how much money you will be changing to chips: (EX: $500 = '500')"
     puts "** Minimum bets are $20 **"
     @money = gets.chomp.to_i
@@ -78,25 +66,24 @@ class Player
   end
 
   def place_bet
-    puts ""
     puts "Please place your bet for this hand:"
     @bet = gets.chomp.to_i
   end
 
-  def show_hidden(dealer_hand, player_hand, player_value)
-      puts "Dealer shows: 'HIDDEN' / #{dealer_hand[1]}"
+  def show_hidden(dealer, player)
+      puts "Dealer shows: 'HIDDEN' / #{dealer.hand[1]}"
       puts ""
-      puts "You have: #{player_value} showing: #{player_hand}"
+      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand}"
       puts ""
   end
 
   def take_turn(player, dealer)
-    show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
+    show_hidden(dealer, player)
     begin
       if player.hit?
         dealer.deal(player)
         player.adjust_bust(player.hand, player.hand_value(player.hand))
-        system_clear(player.money, player.bet)
+        system_clear(player)
         show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
       else
         break
@@ -144,27 +131,25 @@ class Dealer
     person.hand << card
   end
 
-  def show(dealer_hand, dealer_value, player_hand, player_value)
-      puts "Dealer has: #{dealer_value} showing: #{dealer_hand}"
+  def show(dealer, player)
+      puts "Dealer has: #{dealer.hand_value(dealer.hand)} showing: #{dealer.hand}"
       puts ""
-      puts "You have: #{player_value} showing: #{player_hand}"
+      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand}"
       puts ""
   end
 
   def take_turn(dealer, player)
     begin
-      system_clear(player.money, player.bet)
-      show(dealer.hand, dealer.hand_value(dealer.hand), player.hand, \
-                                        player.hand_value(player.hand))
+      system_clear(player)
+      show(dealer, player)
       sleep(1.5)
       if dealer.hit?(dealer.hand_value(dealer.hand))
         puts "Dealer hits"
         sleep(1)
         dealer.deal(dealer)
         dealer.adjust_bust(dealer.hand, dealer.hand_value(dealer.hand))
-        system_clear(player.money, player.bet)
-        show(dealer.hand, dealer.hand_value(dealer.hand), player.hand, \
-                                        player.hand_value(player.hand))
+        system_clear(player)
+        show(dealer, player)
       else
         puts "Dealer stays"
         sleep(1)
@@ -181,6 +166,40 @@ class Dealer
     end
   end
 
+  def declare_winner(dealer, player)
+    system_clear(player)
+    dealer.show(dealer, player)
+    player_value = player.hand_value(player.hand)
+    dealer_value = dealer.hand_value(dealer.hand)
+    
+    if player_value > 21
+      puts "You busted!"
+      puts ""
+      puts "Dealer won!"
+      player.money -= player.bet
+    elsif dealer_value > 21
+      puts "Dealer busted!"
+      puts ""
+      puts "You won!"
+      player.money += player.bet
+    elsif player_value > dealer_value
+      puts "You won!"
+      player.money += player.bet
+    elsif dealer_value > player_value
+      puts "Dealer won!"
+      player.money -= player.bet
+    else
+      puts "It's a push"
+    end
+    sleep(3)
+  end
+
+  def clear_table(dealer, player)
+    dealer.hand.clear
+    player.hand.clear
+    player.bet = 0
+  end
+
 end
 
 class Shoe
@@ -191,6 +210,7 @@ class Shoe
             .product(["H|", "S|", "D|", "C|"]).map {|x| x.join}
     @shoe = @deck * deck_count
   end
+
 end
 
 class Game
@@ -200,37 +220,43 @@ class Game
   attr_accessor :shoe
   
   def initialize
-    system_clear(0, 0)
+    system('cls')
+    system('clear')
     @shoe = Shoe.new(6).shoe.shuffle!
     @player = Player.new
     @dealer = Dealer.new(shoe)
   end
 
   def play_again?
-
+    play_again = false
+    begin
+      puts "Do you wish to play again? (Y/N)"
+      answer = gets.chomp.downcase
+    end until answer == 'y' || answer == 'n'
+    play_again = true if answer == 'y'
   end
 
   def play
-    #LOOP
-      system_clear(player.money, player.bet)
-      player.place_bet
-      system_clear(player.money, player.bet)
-      dealer.initial_deal(dealer, player)
-      player.take_turn(player, dealer)
-      #if player.bust?(player.hand_value(player.hand))
-        #puts "You busted!"
-      #end
-      dealer.take_turn(dealer, player)
-      #Decide winner
-      #Adjust money
-      #Play again?
-    #END until Play again? == no || No money
+    begin
+      catch(:bust) do
+        system_clear(player)
+        player.place_bet
+        system_clear(player)
+        dealer.initial_deal(dealer, player)
+        player.take_turn(player, dealer)
+        throw(:bust) if player.bust?(player.hand_value(player.hand))
+        dealer.take_turn(dealer, player)
+      end
+      dealer.declare_winner(dealer, player)
+      dealer.clear_table(dealer, player)
+      system_clear(player)
+      break if player.money < 20 # Change this
+    end until !play_again?
   end
-
 end
 
 Game.new.play
 
 # Set pacing
 # Change hand display
-# 
+# try just passing in the objects...
