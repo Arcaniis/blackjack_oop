@@ -72,6 +72,19 @@ class Player
     @bet = gets.chomp.to_i
   end
 
+  def take_turn(player, dealer)
+    begin
+      if player.hit?
+        dealer.deal(player)
+        player.adjust_bust(player.hand, player.hand_value(player.hand))
+        system_clear(player.money, player.bet)
+        show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
+      else
+        break
+      end
+    end until player.bust?(player.hand_value(player.hand))
+  end
+
   def hit?
     begin
       puts "Would you like to hit? (Y/N)"
@@ -95,9 +108,20 @@ class Dealer
     @hand = []
   end
 
+  def initial_deal(dealer, player)
+    2.times do 
+      card = @shoe.pop
+      dealer.hand << card
+    end
+    2.times do
+      card = @shoe.pop
+      player.hand << card
+    end
+  end
+
   def deal(person)
-    @card = @shoe.pop
-    person.hand << @card
+    card = @shoe.pop
+    person.hand << card
   end
 
   def hit?(hand_value)
@@ -121,7 +145,15 @@ class Shoe
 end
 
 class Game
-  # attr_accessor :player
+  attr_reader :player, :dealer
+  attr_accessor :shoe
+  
+  def initialize
+    system_clear(0, 0)
+    @shoe = Shoe.new(6).shoe.shuffle!
+    @player = Player.new
+    @dealer = Dealer.new(shoe)
+  end
 
   def system_clear(money, bet)
     system('cls')
@@ -146,31 +178,14 @@ class Game
 
 
   def play
-    system_clear(0, 0)
-    shoe = Shoe.new(6).shoe.shuffle!
-    player = Player.new
-    dealer = Dealer.new(shoe)
+
     #LOOP
       system_clear(player.money, player.bet)
       player.place_bet
       system_clear(player.money, player.bet)
-      2.times do 
-        dealer.deal(dealer)
-      end
-      2.times do
-        dealer.deal(player)
-      end
+      dealer.initial_deal(dealer, player)
       show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
-      begin
-        if player.hit?
-          dealer.deal(player)
-          player.adjust_bust(player.hand, player.hand_value(player.hand))
-          system_clear(player.money, player.bet)
-          show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
-        else
-          break
-        end
-      end until player.bust?(player.hand_value(player.hand))
+      player.take_turn(player, dealer)
       #if player.bust?(player.hand_value(player.hand))
         #puts "You busted!"
       #end
@@ -202,3 +217,7 @@ class Game
 end
 
 Game.new.play
+
+# Set pacing
+# Change hand display
+# 
