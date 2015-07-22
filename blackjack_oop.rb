@@ -86,7 +86,7 @@ class Player
   def show_hidden(dealer, player)
       puts "Dealer shows: 'HIDDEN' / #{dealer.hand[1]}"
       puts ""
-      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand[0]} #{player.hand[1]}"
+      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand.join(" ")}" 
       puts ""
   end
 
