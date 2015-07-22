@@ -52,6 +52,14 @@ module Common
     end
   end
 
+  def blackjack?
+    if self.hand_value(self.hand) == 21
+      true
+    else
+      false
+    end
+  end
+
 end
 
 class Player
@@ -116,7 +124,7 @@ class Dealer
   attr_accessor :hand, :shoe
 
   def initialize
-    @shoe = Shoe.new(1).shoe.shuffle!
+    @shoe = Shoe.new(6).shoe.shuffle!
     @hand = []
   end
 
@@ -200,7 +208,7 @@ class Dealer
     else
       puts "It's a push"
     end
-    sleep(3)
+    sleep(2)
   end
 
   def clear_table(dealer, player)
@@ -257,6 +265,17 @@ class Game
         player.place_bet
         system_clear(player)
         dealer.initial_deal(dealer, player)
+        #binding.pry
+        if player.blackjack?
+          puts "You hit BLACKJACK! You win!"
+          player.money += (1.5 * bet)
+          break
+        end
+        if dealer.blackjack?
+          puts "Dealer hit BLACKJACK! You Lose!"
+          player.money -= bet
+          break
+        end
         player.take_turn(player, dealer)
         throw(:bust) if player.bust?(player.hand_value(player.hand))
         dealer.take_turn(dealer, player)
@@ -264,8 +283,13 @@ class Game
       dealer.declare_winner(dealer, player)
       dealer.clear_table(dealer, player)
       system_clear(player)
+      #binding.pry
       dealer.check_shoe
-      break if player.money < 20 # Change this
+      #binding.pry
+      if player.money < 20
+        puts "You do not have enough chips to continue playing..."
+        break
+      end
     end until !play_again?
   end
 end
@@ -273,7 +297,5 @@ end
 Game.new.play
 
 # Set pacing
-# soft 17's
-# double / split
-# You lose
+# blackjacks
 
