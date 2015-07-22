@@ -1,3 +1,5 @@
+require 'pry'
+
 module SystemClear
 
   def system_clear(player)
@@ -66,14 +68,17 @@ class Player
   end
 
   def place_bet
-    puts "Please place your bet for this hand:"
-    @bet = gets.chomp.to_i
+    while @bet < 20
+      puts "Please place your bet for this hand:"
+      puts "** Minimum bets are $20 **"
+      @bet = gets.chomp.to_i
+    end
   end
 
   def show_hidden(dealer, player)
       puts "Dealer shows: 'HIDDEN' / #{dealer.hand[1]}"
       puts ""
-      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand}"
+      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand[0]} #{player.hand[1]}"
       puts ""
   end
 
@@ -84,7 +89,7 @@ class Player
         dealer.deal(player)
         player.adjust_bust(player.hand, player.hand_value(player.hand))
         system_clear(player)
-        show_hidden(dealer.hand, player.hand, player.hand_value(player.hand))
+        show_hidden(dealer, player)
       else
         break
       end
@@ -108,10 +113,10 @@ end
 class Dealer
   include SystemClear
   include Common
-  attr_accessor :hand
+  attr_accessor :hand, :shoe
 
-  def initialize(shoe)
-    @shoe = shoe
+  def initialize
+    @shoe = Shoe.new(1).shoe.shuffle!
     @hand = []
   end
 
@@ -132,9 +137,13 @@ class Dealer
   end
 
   def show(dealer, player)
-      puts "Dealer has: #{dealer.hand_value(dealer.hand)} showing: #{dealer.hand}"
+      print "Dealer has: #{dealer.hand_value(dealer.hand)} showing: "
+      dealer.hand.each {|card| print card + " "}
       puts ""
-      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand}"
+      puts ""
+      print "You have: #{player.hand_value(player.hand)} showing: "
+      player.hand.each {|card| print card + " "}
+      puts ""
       puts ""
   end
 
@@ -200,9 +209,16 @@ class Dealer
     player.bet = 0
   end
 
+  def check_shoe
+    if @shoe.count < 45
+      @shoe = Shoe.new(6).shoe.shuffle!
+    end
+  end
+
 end
 
 class Shoe
+
   attr_reader :shoe
 
   def initialize(deck_count)
@@ -217,14 +233,12 @@ class Game
   include SystemClear
 
   attr_reader :player, :dealer
-  attr_accessor :shoe
   
   def initialize
     system('cls')
     system('clear')
-    @shoe = Shoe.new(6).shoe.shuffle!
     @player = Player.new
-    @dealer = Dealer.new(shoe)
+    @dealer = Dealer.new
   end
 
   def play_again?
@@ -250,6 +264,7 @@ class Game
       dealer.declare_winner(dealer, player)
       dealer.clear_table(dealer, player)
       system_clear(player)
+      dealer.check_shoe
       break if player.money < 20 # Change this
     end until !play_again?
   end
@@ -258,5 +273,7 @@ end
 Game.new.play
 
 # Set pacing
-# Change hand display
-# try just passing in the objects...
+# soft 17's
+# double / split
+# You lose
+
