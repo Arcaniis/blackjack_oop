@@ -95,7 +95,11 @@ class Player
     begin
       if player.hit?
         dealer.deal(player)
+        show_hidden(dealer, player)
+        binding.pry
         player.adjust_bust(player.hand, player.hand_value(player.hand))
+        show_hidden(dealer, player)
+        binding.pry
         system_clear(player)
         show_hidden(dealer, player)
       else
@@ -121,7 +125,8 @@ end
 class Dealer
   include SystemClear
   include Common
-  attr_accessor :hand, :shoe
+  attr_reader :shoe
+  attr_accessor :hand
 
   def initialize
     @shoe = Shoe.new(6).shoe.shuffle!
@@ -283,7 +288,6 @@ class Game
       dealer.declare_winner(dealer, player)
       dealer.clear_table(dealer, player)
       system_clear(player)
-      #binding.pry
       dealer.check_shoe
       #binding.pry
       if player.money < 20
