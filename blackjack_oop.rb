@@ -67,8 +67,10 @@ class Player
   
   def initialize
     puts "=> Please enter how much money you will be changing to chips: (EX: $500 = '500')"
-    puts "** Minimum bets are $20 **"
-    @money = gets.chomp.to_i
+    begin
+      puts "** Minimum bets are $20 **"
+      @money = gets.chomp.to_i
+    end until @money >= 20
     @hand = []
     @bet = 0
   end
