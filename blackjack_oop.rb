@@ -62,6 +62,7 @@ end
 class Player
   include SystemClear
   include Common
+  
   attr_accessor :money, :hand, :bet
   
   def initialize
@@ -125,6 +126,7 @@ end
 class Dealer
   include SystemClear
   include Common
+  
   attr_reader :shoe
   attr_accessor :hand
 
@@ -295,6 +297,7 @@ class Game
       end
     end until !play_again?
   end
+
 end
 
 Game.new.play
