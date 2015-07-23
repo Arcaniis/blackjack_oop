@@ -85,7 +85,7 @@ class Player
   def blackjack(dealer)
     show_hidden(dealer)
     puts "You hit BLACKJACK! You win!"
-    money += (1.5 * bet)
+    @money += (1.5 * @bet)
     sleep(3.5)
     throw(:blackjack)
   end
