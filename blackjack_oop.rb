@@ -24,11 +24,7 @@ module Common
                 '|JH|' => 10, '|QH|' => 10, '|KH|' => 10, '|AH|' => 11}
 
   def bust?(hand_value)
-    if hand_value > 21
-      true
-    else
-      false
-    end
+    hand_value > 21
   end
 
   def hand_value(hand)
@@ -50,11 +46,7 @@ module Common
   end
 
   def blackjack?
-    if self.hand_value(self.hand) == 21
-      true
-    else
-      false
-    end
+    self.hand_value(self.hand) == 21
   end
 
 end
@@ -83,32 +75,32 @@ class Player
     end
   end
 
-  def show_hidden(dealer, player)
+  def show_hidden(dealer)
       puts "Dealer shows: 'HIDDEN' / #{dealer.hand[1]}"
       puts ""
-      puts "You have: #{player.hand_value(player.hand)} showing: #{player.hand.join(" ")}" 
+      puts "You have: #{hand_value(hand)} showing: #{hand.join(" ")}" 
       puts ""
   end
 
-  def blackjack(dealer, player)
-    player.show_hidden(dealer, player)
+  def blackjack(dealer)
+    show_hidden(dealer)
     puts "You hit BLACKJACK! You win!"
-    player.money += (1.5 * player.bet)
+    money += (1.5 * bet)
     sleep(3.5)
     throw(:blackjack)
   end
 
-  def take_turn(player, dealer)
-    show_hidden(dealer, player)
+  def take_turn(dealer)
+    show_hidden(dealer)
     begin
-      if player.hit?
-        dealer.deal(player)
-        system_clear(player)
-        show_hidden(dealer, player)
+      if hit?
+        dealer.deal(self)
+        system_clear(self)
+        show_hidden(dealer)
       else
         break
       end
-    end until player.bust?(player.hand_value(player.hand))
+    end until bust?(hand_value(hand))
   end
 
   def hit?
@@ -116,11 +108,7 @@ class Player
       puts "Would you like to hit? (Y/N)"
       @answer = gets.chomp.downcase
     end until @answer == 'y' || @answer == 'n'
-    if @answer == 'y'
-      true
-    else
-      false
-    end
+    @answer == 'y'
   end
 
 end
@@ -137,10 +125,10 @@ class Dealer
     @hand = []
   end
 
-  def initial_deal(dealer, player)
+  def initial_deal(player)
     2.times do 
       card = @shoe.pop
-      dealer.hand << card
+      hand << card
     end
     2.times do
       card = @shoe.pop
@@ -153,9 +141,9 @@ class Dealer
     person.hand << card
   end
 
-  def show(dealer, player)
-      print "Dealer has: #{dealer.hand_value(dealer.hand)} showing: "
-      dealer.hand.each {|card| print card + " "}
+  def show(player)
+      print "Dealer has: #{hand_value(hand)} showing: "
+      hand.each {|card| print card + " "}
       puts ""
       puts ""
       print "You have: #{player.hand_value(player.hand)} showing: "
@@ -164,46 +152,42 @@ class Dealer
       puts ""
   end
 
-  def blackjack(dealer, player)
-    dealer.show(dealer, player)
+  def blackjack(player)
+    show(player)
     puts "Dealer hit BLACKJACK! You Lose!"
     player.money -= player.bet
     sleep (3.5)
     throw(:blackjack)
   end
 
-  def take_turn(dealer, player)
+  def take_turn(player)
     begin
       system_clear(player)
-      show(dealer, player)
+      show(player)
       sleep(1.5)
-      if dealer.hit?(dealer.hand_value(dealer.hand))
+      if hit?(hand_value(hand))
         puts "Dealer hits"
         sleep(1)
-        dealer.deal(dealer)
+        deal(self)
         system_clear(player)
-        show(dealer, player)
+        show(player)
       else
         puts "Dealer stays"
         sleep(1)
         break
       end
-    end until dealer.bust?(dealer.hand_value(dealer.hand))
+    end until bust?(hand_value(hand))
   end
 
   def hit?(hand_value)
-    if hand_value < 17
-      true
-    else
-      false
-    end
+    hand_value < 17
   end
 
-  def declare_winner(dealer, player)
+  def declare_winner(player)
     system_clear(player)
-    dealer.show(dealer, player)
+    show(player)
     player_value = player.hand_value(player.hand)
-    dealer_value = dealer.hand_value(dealer.hand)
+    dealer_value = hand_value(hand)
     
     if player_value > 21
       puts "You busted!"
@@ -227,8 +211,8 @@ class Dealer
     sleep(2)
   end
 
-  def clear_table(dealer, player)
-    dealer.hand.clear
+  def clear_table(player)
+    hand.clear
     player.hand.clear
     player.bet = 0
   end
@@ -266,12 +250,11 @@ class Game
   end
 
   def play_again?
-    play_again = false
     begin
       puts "Do you wish to play again? (Y/N)"
       answer = gets.chomp.downcase
     end until answer == 'y' || answer == 'n'
-    play_again = true if answer == 'y'
+    answer == 'y'
   end
 
   def play
@@ -281,16 +264,16 @@ class Game
           system_clear(player)
           player.place_bet
           system_clear(player)
-          dealer.initial_deal(dealer, player)
-          player.blackjack(dealer, player) if player.blackjack?
-          dealer.blackjack(dealer, player) if dealer.blackjack?
-          player.take_turn(player, dealer)
+          dealer.initial_deal(player)
+          player.blackjack(dealer) if player.blackjack?
+          dealer.blackjack(player) if dealer.blackjack?
+          player.take_turn(dealer)
           throw(:bust) if player.bust?(player.hand_value(player.hand))
-          dealer.take_turn(dealer, player)
+          dealer.take_turn(player)
         end
-        dealer.declare_winner(dealer, player)
+        dealer.declare_winner(player)
       end
-        dealer.clear_table(dealer, player)
+        dealer.clear_table(player)
         system_clear(player)
         dealer.check_shoe
       if player.money < 20
