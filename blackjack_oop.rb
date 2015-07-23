@@ -1,5 +1,3 @@
-require 'pry'
-
 module SystemClear
 
   def system_clear(player)
@@ -15,16 +13,15 @@ module Common
 
   VALUE_TABLE = {'|2C|' => 2, '|3C|' => 3, '|4C|' => 4, '|5C|' => 5, '|6C|' => 6,
                 '|7C|' => 7, '|8C|' => 8, '|9C|' => 9, '|10C|' => 10,
-                '|JC|' => 10, '|QC|' => 10, '|KC|' => 10, '|AC|' => 11,
-                '|-AC|' => 1, '|2D|' => 2, '|3D|' => 3, '|4D|' => 4, '|5D|' => 5,
-                '|6D|' => 6, '|7D|' => 7, '|8D|' => 8, '|9D|' => 9, '|10D|' => 10,
-                '|JD|' => 10, '|QD|' => 10, '|KD|' => 10, '|AD|' => 11, '|-AD|' => 1,
-                '|2S|' => 2, '|3S|' => 3, '|4S|' => 4, '|5S|' => 5, '|6S|' => 6,
-                '|7S|' => 7, '|8S|' => 8, '|9S|' => 9, '|10S|' => 10, '|JS|' => 10,
-                '|QS|' => 10, '|KS|' => 10, '|AS|' => 11, '|-AS|' => 1, '|2H|' => 2,
-                '|3H|' => 3, '|4H|' => 4, '|5H|' => 5, '|6H|' => 6, '|7H|' => 7,
-                '|8H|' => 8, '|9H|' => 9, '|10H|' => 10, '|JH|' => 10, '|QH|' => 10,
-                '|KH|' => 10, '|AH|' => 11, '|-AH|' => 1}
+                '|JC|' => 10, '|QC|' => 10, '|KC|' => 10, '|AC|' => 11, '|2D|' => 2, 
+                '|3D|' => 3, '|4D|' => 4, '|5D|' => 5, '|6D|' => 6, '|7D|' => 7, 
+                '|8D|' => 8, '|9D|' => 9, '|10D|' => 10, '|JD|' => 10, '|QD|' => 10, 
+                '|KD|' => 10, '|AD|' => 11, '|2S|' => 2, '|3S|' => 3, '|4S|' => 4, 
+                '|5S|' => 5, '|6S|' => 6, '|7S|' => 7, '|8S|' => 8, '|9S|' => 9, 
+                '|10S|' => 10, '|JS|' => 10, '|QS|' => 10, '|KS|' => 10, 
+                '|AS|' => 11, '|2H|' => 2, '|3H|' => 3, '|4H|' => 4, '|5H|' => 5, 
+                '|6H|' => 6, '|7H|' => 7, '|8H|' => 8, '|9H|' => 9, '|10H|' => 10, 
+                '|JH|' => 10, '|QH|' => 10, '|KH|' => 10, '|AH|' => 11}
 
   def bust?(hand_value)
     if hand_value > 21
@@ -39,17 +36,17 @@ module Common
     hand.each do |card|
       value += VALUE_TABLE[card]
     end
-    return value
-  end
-
-  def adjust_bust(hand, hand_value)
-    hand.each do |card|
-      if hand_value > 21
+    if value > 21
+      hand.each do |card|
         if card =~ /\|A.\|/
-          card.gsub!(/[A]/, '-A' )
+          value -= 10
+          if value < 22
+            break
+          end  
         end
       end
     end
+    value
   end
 
   def blackjack?
@@ -90,16 +87,19 @@ class Player
       puts ""
   end
 
+  def blackjack(dealer, player)
+    player.show_hidden(dealer, player)
+    puts "You hit BLACKJACK! You win!"
+    player.money += (1.5 * player.bet)
+    sleep(3.5)
+    throw(:blackjack)
+  end
+
   def take_turn(player, dealer)
     show_hidden(dealer, player)
     begin
       if player.hit?
         dealer.deal(player)
-        show_hidden(dealer, player)
-        binding.pry
-        player.adjust_bust(player.hand, player.hand_value(player.hand))
-        show_hidden(dealer, player)
-        binding.pry
         system_clear(player)
         show_hidden(dealer, player)
       else
@@ -160,6 +160,14 @@ class Dealer
       puts ""
   end
 
+  def blackjack(dealer, player)
+    dealer.show(dealer, player)
+    puts "Dealer hit BLACKJACK! You Lose!"
+    player.money -= player.bet
+    sleep (3.5)
+    throw(:blackjack)
+  end
+
   def take_turn(dealer, player)
     begin
       system_clear(player)
@@ -169,7 +177,6 @@ class Dealer
         puts "Dealer hits"
         sleep(1)
         dealer.deal(dealer)
-        dealer.adjust_bust(dealer.hand, dealer.hand_value(dealer.hand))
         system_clear(player)
         show(dealer, player)
       else
@@ -265,31 +272,23 @@ class Game
 
   def play
     begin
-      catch(:bust) do
-        system_clear(player)
-        player.place_bet
-        system_clear(player)
-        dealer.initial_deal(dealer, player)
-        #binding.pry
-        if player.blackjack?
-          puts "You hit BLACKJACK! You win!"
-          player.money += (1.5 * bet)
-          break
+      catch(:blackjack) do
+        catch(:bust) do
+          system_clear(player)
+          player.place_bet
+          system_clear(player)
+          dealer.initial_deal(dealer, player)
+          player.blackjack(dealer, player) if player.blackjack?
+          dealer.blackjack(dealer, player) if dealer.blackjack?
+          player.take_turn(player, dealer)
+          throw(:bust) if player.bust?(player.hand_value(player.hand))
+          dealer.take_turn(dealer, player)
         end
-        if dealer.blackjack?
-          puts "Dealer hit BLACKJACK! You Lose!"
-          player.money -= bet
-          break
-        end
-        player.take_turn(player, dealer)
-        throw(:bust) if player.bust?(player.hand_value(player.hand))
-        dealer.take_turn(dealer, player)
+        dealer.declare_winner(dealer, player)
       end
-      dealer.declare_winner(dealer, player)
-      dealer.clear_table(dealer, player)
-      system_clear(player)
-      dealer.check_shoe
-      #binding.pry
+        dealer.clear_table(dealer, player)
+        system_clear(player)
+        dealer.check_shoe
       if player.money < 20
         puts "You do not have enough chips to continue playing..."
         break
@@ -299,7 +298,3 @@ class Game
 end
 
 Game.new.play
-
-# Set pacing
-# blackjacks
-
